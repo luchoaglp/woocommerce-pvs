@@ -23,8 +23,8 @@ function woocommerce_pvs_init() {
     if( class_exists( 'WC_Payment_Gateway' ) ) {
         class WC_PVS_Gateway extends WC_Payment_Gateway {
 
-            const TEST_CALLBACK_URL = 'https://dev-wsbdp.pvssa.com.ar/client/payment/token';
-            const CALLBACK_URL = 'https://wsbdp.pvssa.com.ar/client/payment/token';
+            const TEST_CALLBACK_URL = 'https://dev-wsbdp.pvssa.com.ar';
+            const CALLBACK_URL = 'https://wsbdp.pvssa.com.ar';
             
             public function __construct() {
                 $this->id = 'woocommerce_pvs'; // payment gateway plugin ID
@@ -96,18 +96,19 @@ function woocommerce_pvs_init() {
                 $amount = str_replace( ".", "", $amount );
 
                 $home_url = get_home_url();
-                // $home_url = 'http://201.212.231.16';
+                // $home_url = 'http://201.212.231.16/wordpress';
 
                 $body = array(
                     "clientId"    => $this->auth_token,
                     "amount"      => $amount,
                     "code"        => $order_id,
-                    "callbackUrl" => $home_url . $this->callback_url,
+                    "callbackUrl" => $home_url . '/wp-json/woocommerce-pvs/v1/callback',
                     "redirectUrl" => array(
                         "authorized" => $this->get_return_url( $order ) . '&status=success',
                         "error"      => $this->get_return_url( $order ) . '&status=failure'
                     )
                 );
+
                 $args = array(
                     'method'      => 'POST',
                     'timeout'     => 45,
@@ -122,7 +123,7 @@ function woocommerce_pvs_init() {
                 /*
                 * Your API interaction could be built with wp_remote_post()
                 */
-                $response = wp_remote_post( 'https://dev-wsbdp.pvssa.com.ar/client/payment/token', $args );
+                $response = wp_remote_post( $this->callback_url . '/client/payment/token', $args );
                 
                 if( $response['response']['code'] !== 200 ) {
                     
@@ -150,7 +151,7 @@ function woocommerce_pvs_init() {
 
                     return array(
                         'result' => 'success',
-                        'redirect' => 'https://dev-wsbdp.pvssa.com.ar/pay?pvs_token=' . $token . '&style=full'
+                        'redirect' => $this->callback_url . '/pay?pvs_token=' . $token . '&style=full'
                     );
                 }
             }
@@ -197,7 +198,6 @@ function woocommerce_pvs_order_received_text( $str, $order ) {
 	}
 	return $str;
 }
-
 
 /*
  * This action hook registers our PHP class as a WooCommerce payment gateway
