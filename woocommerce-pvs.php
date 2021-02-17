@@ -40,12 +40,14 @@ function woocommerce_pvs_init() {
 
                 $this->testmode = 'yes' === $this->get_option( 'testmode' );
                 $this->auth_token = $this->testmode ? 
-                    $this->get_option( 'test_auth_token' ) :
-                    $this->get_option( 'auth_token' );
+                    trim( $this->get_option( 'test_auth_token' ) ) :
+                    trim( $this->get_option( 'auth_token' ) );
 
                 $this->callback_url = $this->testmode ? 
                     self::TEST_CALLBACK_URL :
                     self::CALLBACK_URL;
+
+                $this->description = trim( $this->get_option( 'description' ) );
 
                 add_action( 'woocommerce_update_options_payment_gateways_' . $this->id, array( $this, 'process_admin_options' ) );
             }
@@ -76,6 +78,10 @@ function woocommerce_pvs_init() {
                             'title'       => 'ID de Cliente de Producción',
                             'type'        => 'text',
                             'placeholder' => 'Ingrese su ID'
+                        ),
+                        'description' => array(
+                            'title'       => 'Descripción',
+                            'type'        => 'textarea'
                         )
                     )
                 );
@@ -106,7 +112,8 @@ function woocommerce_pvs_init() {
                     "redirectUrl" => array(
                         "authorized" => $this->get_return_url( $order ) . '&status=success',
                         "error"      => $this->get_return_url( $order ) . '&status=failure'
-                    )
+                    ),
+                    "description" => $this->description
                 );
 
                 $args = array(
@@ -178,7 +185,6 @@ function woocommerce_pvs_init() {
     }
 }
 
-
 add_filter( 'woocommerce_thankyou_order_received_text', 'woocommerce_pvs_order_received_text', 10, 2 );
 
 function woocommerce_pvs_order_received_text( $str, $order ) {
@@ -229,11 +235,11 @@ function woocommerce_pvs_callback( $request_data ) {
 
     $parameters = $request_data->get_params();
 
-    $file = fopen(dirname(__FILE__) . "/log.txt",'a+');
-    fwrite($file, date('Y-m-d H:i:s') . "\n");
-    fwrite($file, print_r($parameters, 1));
-    fwrite($file,"-----------------------------------------------\n");
-    fclose($file);
+    $file = fopen( dirname( __FILE__ ) . "/log.txt",'a+' );
+    fwrite( $file, $parameters['status'] . "\n");
+    fwrite( $file, print_r($parameters, 1));
+    fwrite( $file, "-----------------------------------------------\n" );
+    fclose( $file );
 
     $status = $parameters['status'];
 
