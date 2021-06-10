@@ -132,7 +132,7 @@ function woocommerce_pvs_init() {
                 */
                 $response = wp_remote_post( $this->callback_url . '/client/payment/token', $args );
                 
-                if( $response['response']['code'] !== 200 ) {
+                if( 200 !== $response['response']['code'] ) {
                     
                     $body = $response['body'];
 
@@ -185,6 +185,16 @@ function woocommerce_pvs_init() {
     }
 }
 
+/*
+ * This action hook registers our PHP class as a WooCommerce payment gateway
+ */
+add_filter( 'woocommerce_payment_gateways', 'add_to_woocommerce_pvs_gateway' );
+
+function add_to_woocommerce_pvs_gateway( $gateways ) {
+    $gateways[] = 'WC_PVS_Gateway';
+    return $gateways;
+}
+
 add_filter( 'woocommerce_thankyou_order_received_text', 'woocommerce_pvs_order_received_text', 10, 2 );
 
 function woocommerce_pvs_order_received_text( $str, $order ) {
@@ -199,20 +209,9 @@ function woocommerce_pvs_order_received_text( $str, $order ) {
                         $str = '<h4>Se ha producido un error, intentalo más tarde.</h4>';
                         break;
                 }
-
             }
 	}
 	return $str;
-}
-
-/*
- * This action hook registers our PHP class as a WooCommerce payment gateway
- */
-add_filter( 'woocommerce_payment_gateways', 'add_to_woocommerce_pvs_gateway' );
-
-function add_to_woocommerce_pvs_gateway( $gateways ) {
-    $gateways[] = 'WC_PVS_Gateway';
-    return $gateways;
 }
 
 add_action( 'rest_api_init', 'add_callback_url_to_woocommerce_pvs_gateway' );
@@ -236,22 +235,22 @@ function woocommerce_pvs_callback( $request_data ) {
     $parameters = $request_data->get_params();
 
     $file = fopen( dirname( __FILE__ ) . "/log.txt",'a+' );
-    fwrite( $file, $parameters['status'] . "\n");
-    fwrite( $file, print_r($parameters, 1));
+    fwrite( $file, $parameters['status'] . "\n" );
+    fwrite( $file, print_r( $parameters, 1 ) );
     fwrite( $file, "-----------------------------------------------\n" );
     fclose( $file );
 
     $status = $parameters['status'];
 
-    if( $status === 'OK' ) {
+    if( 'OK' === $status ) {
         $paymentCode = $parameters['paymentCode'];
         $message = $parameters['message'];
 
         $order = wc_get_order( $paymentCode );
 
         //if( $order->has_status( 'pending' ) ) {
-            $order->update_status( 'completed' );
-            $order->reduce_order_stock();
+            //$order->update_status( 'completed' );
+            //$order->reduce_order_stock();
         //}
 
         $data = array();
